@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily News Updates</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            /*background-color: #f4f4f4;*/
+        }
+        .newsContainer {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #e6f3ff;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #f0f0f0;
+        }
+        #news-form {
+            display: flex;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px 0 0 5px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #A0002A;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #A0002A;
+        }
+        .article {
+            border: 1px solid #ddd;
+            padding: 10px;
+            font-size: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .article h4 {
+            margin-top: 0;
+        }
+        .article a {
+            color: blue;
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .article a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="newsContainer">
+        <h4>Daily News Updates</h4>
+        <div id="chat-container"></div>
+        <form id="news-form">
+            <input type="text" id="user-input" autocomplete="off" placeholder="What news would you like to read about?">
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatContainer = document.getElementById('chat-container');
+            const newsForm = document.getElementById('news-form');
+            const userInput = document.getElementById('user-input');
+
+            function addMessage(message, isUser = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
+                messageDiv.textContent = message;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            function addArticle(article) {
+                const articleDiv = document.createElement('div');
+                articleDiv.classList.add('article');
+                articleDiv.innerHTML = `
+                    <h4>${article.title}</h4>
+                    <p>${article.description}</p>
+                    <a href="${article.url}" target="_blank">Full link</a>
+                `;
+                chatContainer.appendChild(articleDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            newsForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const userMessage = userInput.value.trim();
+                if (userMessage) {
+                    addMessage(userMessage, true);
+                    userInput.value = '';
+
+                    fetch('/get_news', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `user_input=${encodeURIComponent(userMessage)}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            //addMessage(`Category: ${data.category}`);
+                            addMessage('Here are some articles I found:');
+                            data.articles.forEach(addArticle);
+                            // addMessage(`First article category: ${data.first_article_category}`);
+                        } else {
+                            addMessage(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        addMessage('Sorry, there was an error processing your request.');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
